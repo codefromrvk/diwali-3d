@@ -1,239 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Diwali — The Festival of Lights</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Diwali — a film in light</title>
+  <meta name="description" content="An interactive animated short for Diwali. Light the first diya, pour a rangoli, wave a phuljhadi, release lanterns and set the sky over the ghats on fire." />
+  <meta name="theme-color" content="#07060d" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M32 6c6 10 10 16 10 23a10 10 0 0 1-20 0c0-7 4-13 10-23z' fill='%23ffb347'/><path d='M8 40c4 10 14 16 24 16s20-6 24-16z' fill='%23b5532a'/></svg>" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background: #000;
-      overflow: hidden;
-      font-family: 'Georgia', serif;
-      color: #f5e6d3;
-    }
-
-    #canvas-container {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-    }
-
-    #ui-overlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .hero-content {
-      text-align: center;
-      padding-top: 15vh;
-      opacity: 0;
-    }
-
-    .hero-content h1 {
-      font-size: clamp(4rem, 15vw, 12rem);
-      font-weight: bold;
-      background: linear-gradient(135deg, #ffd700, #ff8c00, #ff4500, #ffd700);
-      background-size: 300% 300%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: shimmer 3s ease-in-out infinite;
-      text-shadow: 0 0 100px rgba(255, 215, 0, 0.5);
-      line-height: 1;
-      margin-bottom: 1rem;
-    }
-
-    .hero-content .subtitle {
-      font-size: clamp(1rem, 3vw, 2rem);
-      color: #d4a574;
-      letter-spacing: 0.5em;
-      text-transform: uppercase;
-      animation: fadeInUp 2s ease-out 0.5s both;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .message-section {
-      text-align: center;
-      padding: 2rem;
-      opacity: 0;
-      transform: translateY(30px);
-      transition: all 1s ease;
-    }
-
-    .message-section.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .message-section h2 {
-      font-size: clamp(1.5rem, 4vw, 3rem);
-      color: #ffd700;
-      margin-bottom: 1rem;
-      text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-    }
-
-    .message-section p {
-      font-size: 1.2rem;
-      color: #d4a574;
-      max-width: 600px;
-      margin: 0 auto;
-      line-height: 1.8;
-    }
-
-    .controls {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 1rem;
-      z-index: 20;
-      pointer-events: all;
-    }
-
-    .control-btn {
-      padding: 0.8rem 1.5rem;
-      background: rgba(255, 215, 0, 0.1);
-      border: 1px solid rgba(255, 215, 0, 0.3);
-      color: #ffd700;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 0.9rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
-    }
-
-    .control-btn:hover {
-      background: rgba(255, 215, 0, 0.2);
-      border-color: #ffd700;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-    }
-
-    .control-btn.active {
-      background: rgba(255, 215, 0, 0.3);
-      box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    }
-
-    .scroll-hint {
-      position: fixed;
-      bottom: 8rem;
-      left: 50%;
-      transform: translateX(-50%);
-      color: rgba(255, 215, 0, 0.5);
-      font-size: 0.8rem;
-      letter-spacing: 0.2em;
-      animation: pulse 2s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-
-    #loading {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: #000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      transition: opacity 1s ease;
-    }
-
-    #loading.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .loader {
-      width: 50px;
-      height: 50px;
-      border: 2px solid rgba(255, 215, 0, 0.2);
-      border-top-color: #ffd700;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .footer {
-      text-align: center;
-      padding: 2rem;
-      color: #8b7355;
-      opacity: 0;
-      transition: opacity 1s ease;
-    }
-
-    .footer.visible {
-      opacity: 1;
-    }
-
-    .footer p {
-      font-size: 1rem;
-      letter-spacing: 0.3em;
-    }
-
-    @media (max-width: 768px) {
-      .hero-content h1 { font-size: clamp(3rem, 12vw, 6rem); }
-      .hero-content .subtitle { font-size: 0.9rem; letter-spacing: 0.3em; }
-      .controls { flex-wrap: wrap; justify-content: center; }
-      .control-btn { padding: 0.6rem 1rem; font-size: 0.8rem; }
-    }
+    /* first paint: a black frame, never unstyled HTML */
+    html, body { margin: 0; background: #07060d; }
+    body > :not(.veil):not(#stage) { visibility: hidden; }
+    html.styled body > :not(.veil):not(#stage) { visibility: visible; }
   </style>
+  <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <div id="loading"><div class="loader"></div></div>
-  <div id="canvas-container"></div>
+  <div id="stage" aria-hidden="true"></div>
 
-  <div id="ui-overlay">
-    <div class="hero-content" id="heroContent">
-      <h1>Diwali</h1>
-      <p class="subtitle">The Festival of Lights</p>
-    </div>
+  <div class="bars" id="bars" aria-hidden="true"><div class="bar top"></div><div class="bar bottom"></div></div>
 
-    <div class="message-section" id="messageSection">
-      <h2>May light conquer darkness</h2>
-      <p>Diwali celebrates the victory of light over darkness, good over evil, and knowledge over ignorance. May this festival bring prosperity, happiness, and peace to you and your family.</p>
+  <header class="hud" id="hud">
+    <div class="brand"><span class="brand-dev">Diwali</span><span class="brand-en">a film in light</span></div>
+    <ol class="meter" id="meter" aria-label="Chapters">
+      <li>I</li><li>II</li><li>III</li><li>IV</li><li>V</li><li>VI</li>
+    </ol>
+    <div class="hud-actions">
+      <button class="ghost-btn" id="skip" type="button">Skip to celebration</button>
+      <button class="icon-btn" id="sound" type="button" aria-label="Mute sound" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z" fill="currentColor" stroke="none"/><path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="mute" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+      </button>
     </div>
+  </header>
 
-    <div class="footer" id="footer">
-      <p>Happy Diwali 2026</p>
+  <section class="intro" id="intro">
+    <div class="intro-inner">
+      <p class="eyebrow">A short film in light</p>
+      <p class="for-line" id="forLine" hidden></p>
+      <h1 class="intro-title">
+        <span class="dev">Diwali</span>
+        <span class="en">The Festival of Lights</span>
+      </h1>
+      <div class="ornament" aria-hidden="true"><span class="orn-line"></span><span class="orn-flame"></span><span class="orn-line"></span></div>
+      <p class="intro-sub">One night on the Ganga, a single flame<br />wakes a whole town.</p>
+      <button class="begin" id="begin" type="button" aria-label="Begin the film">
+        <span class="begin-ring" aria-hidden="true"></span>
+        <span class="begin-glow" aria-hidden="true"></span>
+        <span class="begin-flame" aria-hidden="true"><i class="f-outer"></i><i class="f-mid"></i><i class="f-core"></i></span>
+        <span class="begin-label">Begin</span>
+      </button>
+      <p class="hint">Sound on · six chapters · about five minutes</p>
     </div>
+  </section>
+
+  <article class="caption" id="caption" aria-live="polite">
+    <p class="kicker"></p>
+    <h2 class="title"></h2>
+    <p class="body"></p>
+  </article>
+
+  <div class="prompt" id="prompt" role="status"><span class="prompt-dot"></span><span class="prompt-text"></span></div>
+
+  <button class="next" id="next" type="button"><span>Continue</span><kbd>Space</kbd>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </button>
+
+  <div class="hold" id="hold" aria-hidden="true">
+    <svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="fill" cx="50" cy="50" r="44"/></svg>
   </div>
 
-  <div class="controls" id="controls">
-    <button class="control-btn" data-scene="diyas">Diyas</button>
-    <button class="control-btn" data-scene="fireworks">Fireworks</button>
-    <button class="control-btn" data-scene="rangoli">Rangoli</button>
-    <button class="control-btn" data-scene="all">All</button>
-  </div>
+  <section class="finale" id="finale" aria-labelledby="finaleTitle">
+    <p class="kicker">From the river, with love</p>
+    <h2 class="finale-title" id="finaleTitle"><span class="dev">Happy Diwali</span><span class="en">Light, love &amp; a sweet new year</span></h2>
+    <p class="finale-body" id="finaleBody">May the light you share tonight find its way back to you — brighter.</p>
+    <p class="from-line" id="fromLine" hidden></p>
+    <div class="finale-actions">
+      <button class="primary-btn" id="celebrate" type="button">Light your own crackers</button>
+      <button class="ghost-btn" id="shareOpen" type="button">Send this to someone</button>
+      <button class="ghost-btn" id="replay" type="button">Watch again</button>
+    </div>
+    <form class="share" id="share" hidden>
+      <label><span>Their name</span><input id="toName" maxlength="40" autocomplete="off" placeholder="Amma" /></label>
+      <label><span>Your name</span><input id="fromName" maxlength="40" autocomplete="name" placeholder="Ravi" /></label>
+      <button class="primary-btn" type="submit">Copy link</button>
+    </form>
+  </section>
 
-  <div class="scroll-hint" id="scrollHint">Click buttons to change scene</div>
+  <nav class="tools" id="tools" aria-label="Celebration tools">
+    <button data-tool="diya" type="button"><i class="ic ic-diya"></i><span>Diya</span></button>
+    <button data-tool="sparkler" type="button"><i class="ic ic-sparkler"></i><span>Sparkler</span></button>
+    <button data-tool="chakri" type="button"><i class="ic ic-chakri"></i><span>Spinner</span></button>
+    <button data-tool="anar" type="button"><i class="ic ic-anar"></i><span>Flower pot</span></button>
+    <button data-tool="rocket" type="button"><i class="ic ic-rocket"></i><span>Rocket</span></button>
+    <button data-tool="bomb" type="button"><i class="ic ic-bomb"></i><span>Bomb</span></button>
+    <button data-tool="shell" type="button"><i class="ic ic-shell"></i><span>Sky shot</span></button>
+    <button data-tool="lantern" type="button"><i class="ic ic-lantern"></i><span>Lantern</span></button>
+    <span class="tools-sep"></span>
+    <button data-view="toggle" type="button" class="view-btn"><i class="ic ic-view"></i><span id="viewLabel">River view</span></button>
+    <button data-action="card" type="button" class="view-btn"><i class="ic ic-card"></i><span>Card</span></button>
+  </nav>
+
+  <button class="pan pan-left" data-pan="-1" type="button" aria-label="Walk left along the ghat">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <button class="pan pan-right" data-pan="1" type="button" aria-label="Walk right along the ghat">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+
+  <div class="toast" id="toast" role="status"></div>
+  <div class="veil" id="veil"></div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
