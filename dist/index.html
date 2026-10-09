@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diwali — The Festival of Lights</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: 'Georgia', serif;
+      color: #f5e6d3;
+    }
+
+    #canvas-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    #ui-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-content {
+      text-align: center;
+      padding-top: 15vh;
+      opacity: 0;
+    }
+
+    .hero-content h1 {
+      font-size: clamp(4rem, 15vw, 12rem);
+      font-weight: bold;
+      background: linear-gradient(135deg, #ffd700, #ff8c00, #ff4500, #ffd700);
+      background-size: 300% 300%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s ease-in-out infinite;
+      text-shadow: 0 0 100px rgba(255, 215, 0, 0.5);
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .hero-content .subtitle {
+      font-size: clamp(1rem, 3vw, 2rem);
+      color: #d4a574;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      animation: fadeInUp 2s ease-out 0.5s both;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-section {
+      text-align: center;
+      padding: 2rem;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 1s ease;
+    }
+
+    .message-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .message-section h2 {
+      font-size: clamp(1.5rem, 4vw, 3rem);
+      color: #ffd700;
+      margin-bottom: 1rem;
+      text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+    }
+
+    .message-section p {
+      font-size: 1.2rem;
+      color: #d4a574;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .controls {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 1rem;
+      z-index: 20;
+      pointer-events: all;
+    }
+
+    .control-btn {
+      padding: 0.8rem 1.5rem;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      color: #ffd700;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .control-btn:hover {
+      background: rgba(255, 215, 0, 0.2);
+      border-color: #ffd700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+
+    .control-btn.active {
+      background: rgba(255, 215, 0, 0.3);
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    }
+
+    .scroll-hint {
+      position: fixed;
+      bottom: 8rem;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255, 215, 0, 0.5);
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      animation: pulse 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    #loading {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 1s ease;
+    }
+
+    #loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader {
+      width: 50px;
+      height: 50px;
+      border: 2px solid rgba(255, 215, 0, 0.2);
+      border-top-color: #ffd700;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: #8b7355;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .footer.visible {
+      opacity: 1;
+    }
+
+    .footer p {
+      font-size: 1rem;
+      letter-spacing: 0.3em;
+    }
+
+    @media (max-width: 768px) {
+      .hero-content h1 { font-size: clamp(3rem, 12vw, 6rem); }
+      .hero-content .subtitle { font-size: 0.9rem; letter-spacing: 0.3em; }
+      .controls { flex-wrap: wrap; justify-content: center; }
+      .control-btn { padding: 0.6rem 1rem; font-size: 0.8rem; }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/index-D6YX2QvO.js"></script>
+</head>
+<body>
+  <div id="loading"><div class="loader"></div></div>
+  <div id="canvas-container"></div>
+
+  <div id="ui-overlay">
+    <div class="hero-content" id="heroContent">
+      <h1>Diwali</h1>
+      <p class="subtitle">The Festival of Lights</p>
+    </div>
+
+    <div class="message-section" id="messageSection">
+      <h2>May light conquer darkness</h2>
+      <p>Diwali celebrates the victory of light over darkness, good over evil, and knowledge over ignorance. May this festival bring prosperity, happiness, and peace to you and your family.</p>
+    </div>
+
+    <div class="footer" id="footer">
+      <p>Happy Diwali 2026</p>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <button class="control-btn" data-scene="diyas">Diyas</button>
+    <button class="control-btn" data-scene="fireworks">Fireworks</button>
+    <button class="control-btn" data-scene="rangoli">Rangoli</button>
+    <button class="control-btn" data-scene="all">All</button>
+  </div>
+
+  <div class="scroll-hint" id="scrollHint">Click buttons to change scene</div>
+
+</body>
+</html>
