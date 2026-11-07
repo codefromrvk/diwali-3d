@@ -67,7 +67,7 @@ export function createWorld() {
   scene.add(heroLight);
   const heroGlow = glows.alloc();
 
-  const state = { light: 0, heroOn: 0, embers: 0, beacon: -1 };
+  const state = { light: 0, heroOn: 0, embers: 0 };
   let emberAcc = 0;
 
   const world = {
@@ -127,12 +127,6 @@ export function createWorld() {
       gsap.to(state, { embers: 1, duration: 6, delay: 2 });
     },
 
-    /** Pulse a soft halo around the tulsi lamp to show where to light the sparkler. */
-    beacon(on) {
-      if (on && state.beacon < 0) state.beacon = glows.alloc();
-      else if (!on && state.beacon >= 0) { glows.release(state.beacon); state.beacon = -1; }
-    },
-
     igniteRing() {
       for (let i = ringStart; i < ringEnd; i++) diyas.ignite(i, (i - ringStart) * 0.09);
       rangoli.uniforms.uLight.value = 0.75;
@@ -182,16 +176,13 @@ export function createWorld() {
     courtyardHit(raycaster) {
       const p = world.groundHit(raycaster);
       if (!p || Math.abs(p.y - PLATFORM_Y) > 0.01 || p.z < 2.6 || p.z > 12.2 || Math.abs(p.x) > 21) return null;
-      // keep the rangoli itself clear
-      const dx = p.x - RANGOLI_CENTER.x, dz = p.z - RANGOLI_CENTER.z, d = Math.hypot(dx, dz);
-      if (d < 3.9) { const k = 3.9 / Math.max(d, 0.001); p.x = RANGOLI_CENTER.x + dx * k; p.z = RANGOLI_CENTER.z + dz * k; }
-      // not right under the viewer's nose, and not on the tulsi katta
-      p.z = Math.min(p.z, 7.6);
+      // land where tapped; only nudge off the rangoli and out of solid things
       const keepClear = (cx, cz, r) => {
         const tx = p.x - cx, tz = p.z - cz, td = Math.hypot(tx, tz);
         if (td < r) { p.x = cx + (tx / (td || 1)) * r; p.z = cz + (tz / (td || 1)) * r; }
       };
-      keepClear(tulsi.group.position.x, tulsi.group.position.z, 1.3);
+      keepClear(RANGOLI_CENTER.x, RANGOLI_CENTER.z, 3.75);
+      keepClear(tulsi.group.position.x, tulsi.group.position.z, 0.95);
       keepClear(-11, 3.6, 1.9); // chhatri pavilions
       keepClear(11, 3.6, 1.9);
       return p;
@@ -203,20 +194,6 @@ export function createWorld() {
       return i >= 0;
     },
 
-    nearestLitFlame(screenPt, toScreen, maxPx = 40, onlyTulsi = false) {
-      const p = new THREE.Vector3();
-      const check = (field, i) => {
-        if (!field.isLit(i)) return false;
-        field.wickPos(i, p);
-        p.y += 0.08;
-        const s = toScreen(p);
-        return !s.behind && Math.hypot(s.x - screenPt.x, s.y - screenPt.y) < maxPx;
-      };
-      if (onlyTulsi) return check(diyas, tulsiDiya);
-      for (let i = 0; i < diyas.count; i++) if (check(diyas, i)) return true;
-      for (let i = 0; i < floaters.count; i++) if (check(floaters, i)) return true;
-      return false;
-    },
 
     update(dt) {
       sky.update(camera);
@@ -227,10 +204,6 @@ export function createWorld() {
       rangoli.update();
       tulsi.update();
       tulsi.setLamp(diyas.isLit(tulsiDiya) ? 1 : 0);
-      if (state.beacon >= 0) {
-        const w = diyas.wickPos(tulsiDiya), k = 0.5 + 0.5 * Math.sin(clock.t * 3);
-        glows.set(state.beacon, w.x, w.y + 0.06, w.z, 0.9 + k * 0.5, 0.5 * k, 0.25 * k, 0.06 * k);
-      }
       lanterns.update(dt);
       pyro.update(dt);
       glows.update(dt);

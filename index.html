@@ -6,6 +6,27 @@
   <title>Diwali — a film in light</title>
   <meta name="description" content="An interactive animated short for Diwali. Light the first diya, pour a rangoli, wave a phuljhadi, release lanterns and set the sky over the ghats on fire." />
   <meta name="theme-color" content="#07060d" />
+  <link rel="canonical" href="__SITE_URL__/" />
+
+  <!-- Open Graph: WhatsApp, LinkedIn (also Facebook, iMessage, Slack, Discord). The site origin is filled in at build time by vite.config.js -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Diwali — a film in light" />
+  <meta property="og:locale" content="en_IN" />
+  <meta property="og:url" content="__SITE_URL__/" />
+  <meta property="og:title" content="Happy Diwali — a short film in light" />
+  <meta property="og:description" content="Light a diya, pour a rangoli and set the sky over the ghats on fire. An interactive Diwali film to send to someone you love." />
+  <meta property="og:image" content="__SITE_URL__/og.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="“Happy Diwali” in gold over a lamp-lit ghat at night, a firework bursting above the river." />
+
+  <!-- X / Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Happy Diwali — a short film in light" />
+  <meta name="twitter:description" content="Light a diya, pour a rangoli and set the sky over the ghats on fire. An interactive Diwali film to send to someone you love." />
+  <meta name="twitter:image" content="__SITE_URL__/og.jpg" />
+  <meta name="twitter:image:alt" content="“Happy Diwali” in gold over a lamp-lit ghat at night, a firework bursting above the river." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -13,8 +34,7 @@
   <style>
     /* first paint: a black frame, never unstyled HTML */
     html, body { margin: 0; background: #07060d; }
-    body > :not(.veil):not(#stage) { visibility: hidden; }
-    html.styled body > :not(.veil):not(#stage) { visibility: visible; }
+    html:not(.styled) body > :not(.veil):not(#stage) { visibility: hidden; }
   </style>
   <link rel="stylesheet" href="/src/style.css" />
 </head>

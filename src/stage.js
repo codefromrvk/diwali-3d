@@ -102,14 +102,17 @@ export function shake(amount = 1) {
 }
 
 // ---------- pointer ----------
-export const pointer = { x: 0, y: 0, sx: 0, sy: 0, px: innerWidth / 2, py: innerHeight / 2, ndc: new THREE.Vector2() };
+export const pointer = { x: 0, y: 0, sx: 0, sy: 0, px: innerWidth / 2, py: innerHeight / 2, ndc: new THREE.Vector2(), type: 'mouse' };
+export const isPortrait = () => innerHeight > innerWidth * 1.1;
 addEventListener('pointermove', (e) => {
+  pointer.type = e.pointerType;
   pointer.px = e.clientX; pointer.py = e.clientY;
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / innerHeight) * 2 + 1;
   pointer.ndc.set(pointer.x, pointer.y);
 }, { passive: true });
 addEventListener('pointerdown', (e) => {
+  pointer.type = e.pointerType;
   pointer.px = e.clientX; pointer.py = e.clientY;
   pointer.x = (e.clientX / innerWidth) * 2 - 1;
   pointer.y = -(e.clientY / innerHeight) * 2 + 1;
@@ -134,8 +137,10 @@ const right = new THREE.Vector3(), up = new THREE.Vector3(), fwd = new THREE.Vec
 export function updateCamera() {
   const t = clock.t;
   const ease = reducedMotion ? 0 : 1;
-  pointer.sx += (pointer.x - pointer.sx) * Math.min(1, clock.dt * 2.5);
-  pointer.sy += (pointer.y - pointer.sy) * Math.min(1, clock.dt * 2.5);
+  // a touch is a tap, not a cursor: don't swing the camera toward it
+  const touch = pointer.type === 'touch';
+  pointer.sx += ((touch ? 0 : pointer.x) - pointer.sx) * Math.min(1, clock.dt * 2.5);
+  pointer.sy += ((touch ? 0 : pointer.y) - pointer.sy) * Math.min(1, clock.dt * 2.5);
 
   camera.position.copy(rig.pos);
   fwd.subVectors(rig.target, rig.pos).normalize();

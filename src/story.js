@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import gsap from 'gsap';
-import { shot, rig, fadeTo, pointer, rayFromPointer, toScreen, camera, reducedMotion, isMobile } from './stage.js';
+import { shot, rig, fadeTo, pointer, rayFromPointer, toScreen, camera, reducedMotion, isMobile, isPortrait } from './stage.js';
 import { clock } from './time.js';
 import { audio, PHRASES } from './audio.js';
 import { RANGOLI_CENTER } from './world/rangoli.js';
@@ -111,7 +111,6 @@ const paint = { down: false, resolve: null, started: 0 };
 const counters = { lanterns: 0, shells: 0, crackers: 0 };
 let sparklerTarget = new THREE.Vector3();
 let sparklerDist = 4.6;
-let sparklerOnlyTulsi = false;
 let inChapterPlay = false;
 
 addEventListener('pointerdown', (e) => {
@@ -158,9 +157,12 @@ function paintAt(fresh) {
   if (Math.random() < 0.08) audio.ping(587 * [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3][(Math.random() * 5) | 0], 0.015);
 }
 
+const tipRay = new THREE.Raycaster(), tipNdc = new THREE.Vector2();
 function pointerPointAt(dist) {
-  const r = rayFromPointer().ray;
-  return r.origin.clone().addScaledVector(r.direction, dist);
+  const lift = pointer.type === 'touch' ? 72 : 0; // px above the fingertip
+  tipNdc.set(pointer.x, -((pointer.py - lift) / innerHeight) * 2 + 1);
+  tipRay.setFromCamera(tipNdc, camera);
+  return tipRay.ray.origin.clone().addScaledVector(tipRay.ray.direction, dist);
 }
 
 function releaseLanternAtPointer(byUser) {
@@ -225,11 +227,11 @@ export function storyUpdate(dt) {
   if (sp.active) {
     sparklerTarget.copy(pointerPointAt(sparklerDist));
     sp.update(dt, sparklerTarget);
-    if (!sp.lit && !sp.spent && world.nearestLitFlame(toScreen(sp.tip), toScreen, isMobile ? 46 : 34, sparklerOnlyTulsi)) {
-      const relight = sp.litAt !== undefined;
+    // picking the sparkler hands you a lit one
+    if (!sp.lit && !sp.spent && sp.wantLit) {
+      sp.wantLit = false;
       sp.ignite();
-      if (inChapterPlay) { world.beacon(false); if (relight) prompt('Draw circles of light'); }
-      else if (relight && mode !== 'play') { prompt('Draw circles of light'); world.beacon(false); }
+      if (inChapterPlay) prompt(isMobile ? 'Draw circles of light' : 'Draw circles of light — it burns for ten seconds');
     }
   }
 }
@@ -249,13 +251,23 @@ const SHOTS = {
   courtyard: { pos: [0.6, 6.2, 12.3], target: [2.2, 3.0, -0.5], fov: 54 },
 };
 
-export function placeIntroCamera() { shot({ ...SHOTS.intro, duration: 0 }); }
+// Tall phone screens need their own framing where the landscape shot crops the subject.
+const PORTRAIT = {
+  rangoli: { pos: [0, 15.5, 9.6], target: [0, 3, 8.6], fov: 42 },
+  sparkler: { pos: [1.6, 5.8, 14.2], target: [7.2, 3.9, -1.0], fov: 50 },
+};
+const S = (name) => (isPortrait() && PORTRAIT[name]) || SHOTS[name];
+
+/** Change how much the camera follows the cursor — eased, never snapped. */
+function easeParallax(v) { gsap.to(rig, { parallax: v, duration: 1.6, ease: 'power2.inOut', overwrite: true }); }
+
+export function placeIntroCamera() { shot({ ...S('intro'), duration: 0 }); }
 
 async function chapterDarkness() {
   meter(1);
   ui.bars.classList.add('on');
   caption('Chapter I | Nightfall', 'Before the lamps', 'The ghats lie quiet under a pale moon. The river holds its breath — and a whole town waits for a single flame.');
-  shot({ ...SHOTS.river, duration: reducedMotion ? 2 : 11, ease: 'power2.inOut' });
+  shot({ ...S('river'), duration: reducedMotion ? 2 : 11, ease: 'power2.inOut' });
   setTimeout(() => audio.flute(PHRASES.dawn, { bpm: 64 }), 2500);
   await waitNext('Continue', 5);
 }
@@ -266,8 +278,8 @@ async function chapterFirstFlame() {
   const moon = { k: 1 };
   const setMoon = () => world.ghat.setMoon(moon.k);
   gsap.to(moon, { k: 0.55, duration: 5, delay: 1, ease: 'power2.inOut', onUpdate: setMoon });
-  await shot({ ...SHOTS.hero, duration: 6, ease: 'power2.inOut', via: [0, 4.5, -10] });
-  rig.parallax = 0.25;
+  await shot({ ...S('hero'), duration: 6, ease: 'power2.inOut', via: [0, 4.5, -10] });
+  easeParallax(0.25);
   caption('Chapter II | The first diya', 'The first flame', 'Every Diwali begins the same way — with one small lamp, and someone brave enough to light it.');
   await sleep(1.4);
   prompt(isMobile ? 'Press and hold to light the diya' : 'Press and hold anywhere to light the diya');
@@ -279,13 +291,13 @@ async function chapterFirstFlame() {
   await sleep(0.8);
   caption('Chapter II | The first diya', 'A flame loses nothing', 'by lighting another.');
   await sleep(2.6);
-  rig.parallax = 1;
+  easeParallax(1);
   world.cascade((i) => audio.pentatonicPing(i, 0.035));
   gsap.to(moon, { k: 1, duration: 6, ease: 'power1.inOut', onUpdate: setMoon });
   audio.flute(PHRASES.spread, { bpm: 76, t: audio.now + 1 });
-  await shot({ ...SHOTS.heroPull, duration: 4.5, ease: 'power2.inOut' });
+  await shot({ ...S('heroPull'), duration: 4.5, ease: 'power2.inOut' });
   hideCaption();
-  await shot({ ...SHOTS.wide, duration: 7, ease: 'power1.inOut' });
+  await shot({ ...S('wide'), duration: 7, ease: 'power1.inOut' });
   caption('Chapter II | Coming home', 'The way home', 'When Rama returned to Ayodhya after fourteen years of exile, the people lit every doorway to guide him home. We have been lighting the way ever since.');
   await waitNext('Continue', 2);
 }
@@ -294,8 +306,8 @@ async function chapterRangoli() {
   meter(3);
   hideCaption();
   gsap.to(world.rangoli.uniforms.uChalk, { value: 1, duration: 3, delay: 2 });
-  await shot({ ...SHOTS.rangoli, duration: 6, ease: 'power2.inOut', via: [0, 13, -4] });
-  rig.parallax = 0.12;
+  await shot({ ...S('rangoli'), duration: 6, ease: 'power2.inOut', via: [0, 13, -4] });
+  easeParallax(0.12);
   caption('Chapter III | Rangoli', 'Colours at the threshold', 'Patterns poured by hand at the doorstep, to welcome Lakshmi — and every guest — inside.');
   await sleep(1);
   prompt(isMobile ? 'Drag across the floor to pour colour' : 'Move across the floor to pour colour');
@@ -317,7 +329,7 @@ async function chapterRangoli() {
   world.igniteRing();
   world.petals();
   audio.bell(880, 0.12);
-  rig.parallax = 1;
+  easeParallax(1);
   caption('Chapter III | Rangoli', 'Welcome home', 'No two are ever the same. Every one says the same thing: you are welcome here.');
   await waitNext('Continue', 2.5);
 }
@@ -325,21 +337,19 @@ async function chapterRangoli() {
 async function chapterSparkler() {
   meter(4);
   hideCaption();
-  await shot({ ...SHOTS.sparkler, duration: 6, ease: 'power2.inOut', via: [1, 9, 8] });
-  rig.parallax = 0.15;
+  await shot({ ...S('sparkler'), duration: 6, ease: 'power2.inOut', via: [1, 9, 8] });
+  easeParallax(0.15);
   caption('Chapter IV | Sparklers', 'Hold a star', 'Every child’s first firework — a wire of starlight that crackles and spits in your hand.');
   // the whole cracker box is open in this scene
   inChapterPlay = true;
   counters.crackers = 0;
   view = 'chapter';
+  pan = panTarget = 0;
   document.body.classList.add('chapter-tools');
   ui.tools.classList.add('on');
   mode = 'play';
-  sparklerOnlyTulsi = true;
   setTool('sparkler');
-  prompt('Light your sparkler at the tulsi katta — or pick any cracker below');
   await new Promise((r) => { const iv = setInterval(() => { if (world.sparkler.lit || counters.crackers > 0) { clearInterval(iv); r(); } }, 100); });
-  prompt(world.sparkler.lit ? 'Draw circles of light — it burns for ten seconds' : 'Light as many as you like');
   hideCaption();
   await sleep(4);
   caption('Chapter IV | Sparklers', 'Write your name in light', 'It lasts only a moment. That is exactly why we remember it.');
@@ -348,18 +358,16 @@ async function chapterSparkler() {
   setTool(null);
   mode = 'none';
   inChapterPlay = false;
-  sparklerOnlyTulsi = false;
-  world.beacon(false);
   ui.tools.classList.remove('on');
   document.body.classList.remove('chapter-tools');
   view = 'courtyard';
-  rig.parallax = 1;
+  easeParallax(1);
 }
 
 async function chapterLanterns() {
   meter(5);
   hideCaption();
-  await shot({ ...SHOTS.lantern, duration: 6.5, ease: 'power2.inOut', via: [0, 8, 6] });
+  await shot({ ...S('lantern'), duration: 6.5, ease: 'power2.inOut', via: [0, 8, 6] });
   caption('Chapter V | Sky lanterns', 'Wishes on the wind', 'Paper lanterns carry our hopes up, over the river, into the dark.');
   for (let i = 0; i < 8; i++) {
     setTimeout(() => {
@@ -370,7 +378,7 @@ async function chapterLanterns() {
   audio.flute(PHRASES.wish, { bpm: 60, t: audio.now + 2 });
   await sleep(1.5);
   counters.lanterns = 0;
-  prompt('Tap over the river to release a lantern — make a wish');
+  prompt(isMobile ? 'Tap the river to release a lantern' : 'Tap over the river to release a lantern — make a wish');
   mode = 'lantern';
   await new Promise((r) => {
     const t0 = clock.t;
@@ -397,23 +405,25 @@ async function chapterFireworks() {
   meter(6);
   hideCaption();
   ui.bars.classList.remove('on');
-  await shot({ ...SHOTS.fireworks, duration: 6, ease: 'power2.inOut' });
+  await shot({ ...S('fireworks'), duration: 4, ease: 'power2.inOut' });
   caption('Chapter VI | Fireworks', 'And the sky answers', '');
   mode = 'fireworks';
   prompt('Tap anywhere to light up the sky');
-  audio.flute(PHRASES.finale, { bpm: 80, t: audio.now + 14 });
+  // the show is choreographed at 22s; play it at ~55% so the finale lands in ~12s
+  const PACE = 0.55;
+  audio.flute(PHRASES.finale, { bpm: 80, t: audio.now + 7 });
   for (const [t, color, type, [x, y]] of CHOREO) {
-    world.pyro.at(t + 0.6, () => world.pyro.shell(new THREE.Vector3(x * 1.1 + (Math.random() - 0.5) * 3, y - 2, 22 + Math.random() * 6), type, { color }));
+    world.pyro.at(t * PACE + 0.4, () => world.pyro.shell(new THREE.Vector3(x * 1.1 + (Math.random() - 0.5) * 3, y - 2, 22 + Math.random() * 6), type, { color }));
   }
   // ground crackers along the ghat join in
-  world.pyro.at(3, () => [-14, 14].forEach((x) => world.pyro.anar(new THREE.Vector3(x, 3, 3.2), 9)));
-  world.pyro.at(9, () => [-22, 0, 22].forEach((x) => world.pyro.chakri(new THREE.Vector3(x, 2.0, -0.7), 6)));
-  world.pyro.at(13, () => [-6, 6].forEach((x) => world.pyro.anar(new THREE.Vector3(x, 0.5, -3.6), 8)));
-  await sleep(6);
+  world.pyro.at(1.5, () => [-14, 14].forEach((x) => world.pyro.anar(new THREE.Vector3(x, 3, 3.2), 8)));
+  world.pyro.at(4.5, () => [-22, 0, 22].forEach((x) => world.pyro.chakri(new THREE.Vector3(x, 2.0, -0.7), 6)));
+  world.pyro.at(7, () => [-6, 6].forEach((x) => world.pyro.anar(new THREE.Vector3(x, 0.5, -3.6), 7)));
+  await sleep(4);
   hideCaption();
-  await sleep(10);
+  await sleep(6);
   prompt('');
-  await sleep(5);
+  await sleep(3);
   showFinale();
   ambientShow(true);
 }
@@ -440,26 +450,30 @@ function showFinale() {
   ui.meter.forEach((li) => { li.classList.add('done'); li.classList.remove('now'); });
   if (FROM) { const f = $('#fromLine'); f.textContent = `— with love, ${FROM}`; f.hidden = false; }
   if (TO) $('#finaleBody').textContent = `${TO}, may the light you share tonight find its way back to you — brighter.`;
-  shot({ ...SHOTS.fireworks, duration: 3 });
+  shot({ ...S('fireworks'), duration: 3 });
 }
 
 const GROUND_TOOLS = ['chakri', 'anar', 'rocket', 'bomb'];
 let view = 'courtyard';
 const PAN_RANGE = 10;
 let pan = 0, panTarget = 0, panHold = 0, courtyardReady = false;
-const canPan = () => mode === 'play' && view === 'courtyard' && courtyardReady;
-function courtyardShot() {
-  const c = SHOTS.courtyard, o = pan * PAN_RANGE;
-  return { ...c, pos: [c.pos[0] + o, c.pos[1], c.pos[2]], target: [c.target[0] + o, c.target[1], c.target[2]] };
+const canPan = () => mode === 'play' && ((view === 'courtyard' && courtyardReady) || view === 'chapter');
+const panBase = () => S(view === 'chapter' ? 'sparkler' : 'courtyard');
+/** The base shot slid sideways (along the camera's right) by the current pan. */
+function pannedShot(base = panBase()) {
+  const fx = base.target[0] - base.pos[0], fz = base.target[2] - base.pos[2], l = Math.hypot(fx, fz);
+  const rx = -fz / l, rz = fx / l, o = pan * PAN_RANGE;
+  return { ...base, pos: [base.pos[0] + rx * o, base.pos[1], base.pos[2] + rz * o], target: [base.target[0] + rx * o, base.target[1], base.target[2] + rz * o] };
 }
+const courtyardShot = () => pannedShot(S('courtyard'));
 function panUpdate(dt) {
   document.body.classList.toggle('can-pan', canPan());
   if (!canPan()) return;
   panTarget = THREE.MathUtils.clamp(panTarget + panHold * dt * 0.7, -1, 1);
   pan += (panTarget - pan) * Math.min(1, dt * 5);
-  const c = SHOTS.courtyard, o = pan * PAN_RANGE;
-  rig.pos.x = c.pos[0] + o;
-  rig.target.x = c.target[0] + o;
+  const sh = pannedShot();
+  rig.pos.x = sh.pos[0]; rig.pos.z = sh.pos[2];
+  rig.target.x = sh.target[0]; rig.target.z = sh.target[2];
 }
 addEventListener('keydown', (e) => {
   if (mode !== 'play' || e.target.closest?.('input')) return;
@@ -475,8 +489,16 @@ function setView(v) {
   if (tool === 'sparkler') sparklerDist = view === 'courtyard' ? 4.6 : 6;
   const crane = from !== v ? { via: [0, 12, -4] } : {};
   courtyardReady = false;
-  shot({ ...(view === 'courtyard' ? courtyardShot() : SHOTS.play), duration: 3.6, ease: 'power2.inOut', ...crane })
+  shot({ ...(view === 'courtyard' ? courtyardShot() : S('play')), duration: 3.6, ease: 'power2.inOut', ...crane })
     .then(() => { if (view === 'courtyard') courtyardReady = true; });
+}
+function centerPointer() {
+  const lift = pointer.type === 'touch' ? 72 : 0;
+  pointer.px = innerWidth / 2;
+  pointer.py = Math.min(innerHeight * 0.42 + lift, innerHeight * 0.7);
+  pointer.x = 0;
+  pointer.y = -(pointer.py / innerHeight) * 2 + 1;
+  pointer.ndc.set(pointer.x, pointer.y);
 }
 function setTool(t) {
   tool = t;
@@ -486,23 +508,23 @@ function setTool(t) {
   if (t === 'sparkler') {
     sparklerDist = view === 'river' ? 6 : 4.6;
     sp.setActive(true);
+    sp.wantLit = true;
+    centerPointer(); // hand it over in the middle of the scene, not at the toolbar button
     document.body.classList.add('cursor-hide');
-    if (inChapterPlay) {
-      world.beacon(true);
-      sp.onBurnout = () => { prompt('Burnt out — light a fresh one at the tulsi katta'); world.beacon(true); };
-    } else {
-      toast('Touch any diya flame to light it');
-      sp.onBurnout = () => toast('Burnt out — grab another and light it from a diya');
-    }
-  } else {
-    if (sp.active) { sp.setActive(false); document.body.classList.remove('cursor-hide'); }
-    if (inChapterPlay) world.beacon(false);
+    const out = 'Burnt out — tap Sparkler for a fresh one';
+    sp.onBurnout = () => (inChapterPlay ? prompt(out) : toast(out));
+  } else if (sp.active) {
+    sp.setActive(false);
+    document.body.classList.remove('cursor-hide');
   }
   const hints = {
     diya: 'Tap the ghat to place a diya', chakri: 'Tap the floor beside the rangoli for a ground spinner', anar: 'Tap the floor beside the rangoli to light a flower pot',
     rocket: 'Tap the floor to stand a rocket in its bottle', bomb: 'Tap the floor to light a bomb — then step back', shell: 'Tap the sky', lantern: 'Tap to release a lantern',
   };
-  if (hints[t]) toast(hints[t]);
+  // in chapter 4 the bottom prompt follows the selected cracker; elsewhere a passing toast
+  if (inChapterPlay && t !== 'sparkler' && hints[t]) prompt(hints[t]);
+  else if (hints[t]) toast(hints[t]);
+  if (inChapterPlay && t === 'sparkler' && world.sparkler.lit) prompt(isMobile ? 'Draw circles of light' : 'Draw circles of light — it burns for ten seconds');
 }
 
 function celebrate() {
@@ -515,6 +537,19 @@ function celebrate() {
   setTool('anar');
   ambientShow(true, [5, 10]);
   setTimeout(() => toast(isMobile ? 'Swipe sideways to walk along the ghat' : 'Drag sideways or use ← → to walk along the ghat'), 2800);
+}
+
+// navigator.clipboard only exists on https/localhost; fall back to a hidden textarea + execCommand
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch {}
+  const ta = Object.assign(document.createElement('textarea'), { value: text, readOnly: true });
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;user-select:text;-webkit-user-select:text;';
+  document.body.appendChild(ta);
+  ta.select(); ta.setSelectionRange(0, text.length);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch {}
+  ta.remove();
+  return ok;
 }
 
 function wireFinale() {
@@ -532,10 +567,15 @@ function wireFinale() {
     if (to) u.searchParams.set('to', to);
     if (from) u.searchParams.set('from', from);
     const url = u.toString();
-    try {
-      if (navigator.share && isMobile) await navigator.share({ title: 'Happy Diwali', text: to ? `${to}, I lit a diya for you` : 'A little film of light, for you', url });
-      else { await navigator.clipboard.writeText(url); toast('Link copied — send it with love'); }
-    } catch { toast(url); }
+    if (navigator.share && isMobile) {
+      try {
+        await navigator.share({ title: 'Happy Diwali', text: to ? `${to}, I lit a diya for you` : 'A little film of light, for you', url });
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return; // user closed the share sheet
+      }
+    }
+    toast((await copyText(url)) ? 'Link copied — send it with love' : url);
   });
   document.querySelectorAll('.tools [data-tool]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); setTool(b.dataset.tool); }));
   $('.tools [data-view]').addEventListener('click', () => {
@@ -623,7 +663,7 @@ async function runSkipped() {
   world.lightEverything();
   world.rangoli.uniforms.uChalk.value = 1;
   world.igniteRing();
-  shot({ ...SHOTS.fireworks, duration: 0 });
+  shot({ ...S('fireworks'), duration: 0 });
   fadeTo(0, 2);
   $('#veil').classList.add('off');
   ui.hud.classList.add('on');

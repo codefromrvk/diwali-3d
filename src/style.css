@@ -92,13 +92,16 @@ body.cursor-hide #stage { cursor: none; }
 
 /* ---------- intro ---------- */
 .intro {
-  position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; text-align: center;
+  /* centred by .intro-inner's auto margins, not place-items: when the card is taller than the
+     screen (phones held sideways) it starts at the top and scrolls instead of pushing Begin off-screen */
+  position: fixed; inset: 0; z-index: 30; display: grid; text-align: center;
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
   background:
     radial-gradient(ellipse 46% 42% at 50% 44%, rgba(6, 5, 14, 0.42), rgba(6, 5, 14, 0) 100%),
     linear-gradient(180deg, rgba(6, 5, 14, 0.35) 0%, rgba(6, 5, 14, 0) 22%, rgba(6, 5, 14, 0) 62%, rgba(6, 5, 14, 0.7) 100%);
   padding: 24px 16px;
 }
-.intro-inner { max-width: 640px; display: flex; flex-direction: column; align-items: center; }
+.intro-inner { max-width: 640px; margin: auto; display: flex; flex-direction: column; align-items: center; }
 .intro > * { will-change: opacity, transform; }
 .intro-inner > :not(.intro-title), .intro-title .dev, .intro-title .en { opacity: 0; } /* revealed by the title sequence */
 .eyebrow { font-family: var(--serif); font-style: italic; font-size: 19px; letter-spacing: 0.04em; color: rgba(246, 234, 214, 0.7); }
@@ -165,6 +168,19 @@ body.cursor-hide #stage { cursor: none; }
   background: radial-gradient(circle, rgba(255, 236, 190, 0.95) 0%, rgba(255, 170, 70, 0.55) 30%, rgba(255, 120, 40, 0) 70%);
 }
 .hint { margin-top: 18px; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(246, 234, 214, 0.38); }
+/* short screens (phones held sideways): the whole title card, Begin included, fits without scrolling */
+@media (max-height: 560px) {
+  .intro { padding-block: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-bottom, 0px)); }
+  .eyebrow { font-size: 15px; }
+  .for-line { margin-top: 8px; font-size: 18px; }
+  .intro-title { margin-top: 4px; }
+  .intro-title .dev { font-size: clamp(56px, 20vh, 112px); }
+  .intro-title .en { font-size: 14px; margin-top: 2px; }
+  .ornament { margin-top: 10px; }
+  .intro-sub { margin-top: 8px; font-size: 16px; line-height: 1.4; }
+  .begin { margin-top: 12px; }
+  .hint { margin-top: 10px; }
+}
 
 /* ---------- captions ---------- */
 .caption {
@@ -224,6 +240,8 @@ body.cursor-hide #stage { cursor: none; }
 .finale {
   position: fixed; z-index: 18; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: min(620px, calc(100vw - 32px)); text-align: center; padding: clamp(28px, 5vw, 48px) clamp(20px, 4vw, 44px);
+  /* short phones with the share form open: scroll inside the card instead of clipping top and bottom */
+  max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
   border-radius: 28px; background: linear-gradient(180deg, rgba(20, 12, 18, 0.5), rgba(12, 8, 14, 0.62));
   border: 1px solid rgba(242, 195, 107, 0.2);
   backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
@@ -242,10 +260,12 @@ body.cursor-hide #stage { cursor: none; }
 .finale-body { margin: 16px auto 0; font-family: var(--serif); font-size: clamp(18px, 2vw, 21px); line-height: 1.5; color: var(--cream-dim); max-width: 36ch; }
 .from-line { margin-top: 12px; font-family: var(--serif); font-style: italic; color: var(--gold); font-size: 20px; }
 .finale-actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-.share { margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; text-align: left; }
+/* minmax(0, …): a bare 1fr track won't shrink below the input's ~20ch intrinsic width and overflows the card */
+.share { margin-top: 22px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; text-align: left; }
 .share[hidden] { display: none; }
 .share label { display: flex; flex-direction: column; gap: 6px; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cream-dim); }
 .share input {
+  width: 100%; min-width: 0;
   font: inherit; font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--cream);
   background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(246, 234, 214, 0.18); border-radius: 12px; padding: 11px 12px;
   user-select: text; -webkit-user-select: text;
@@ -315,8 +335,9 @@ body.can-pan .pan { opacity: 1; pointer-events: auto; }
   .caption .body { font-size: 17px; }
   .prompt { bottom: calc(var(--bar) + 18px); transform: translate(-50%, 0); font-size: 12px; }
   .next { bottom: calc(var(--bar) * 0.5); }
-  .share { grid-template-columns: 1fr 1fr; }
+  .share { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .share button { grid-column: 1 / -1; }
+  .share input { font-size: 16px; } /* < 16px makes iOS Safari zoom the page on focus */
   .tools button { min-width: 58px; }
 }
 @media (max-height: 520px) { .caption .body { display: none; } }
@@ -338,4 +359,34 @@ body.chapter-tools .caption { bottom: calc(var(--bar) + 150px); }
 @media (max-width: 760px) {
   body.chapter-tools .next { bottom: calc(var(--bar) + 104px); transform: none; }
   body.chapter-tools .prompt { bottom: calc(var(--bar) + 160px); }
+}
+
+/* ================= phones ================= */
+@media (max-width: 760px) {
+  /* prompts wrap instead of being cut off with "…" */
+  .prompt {
+    white-space: normal; text-align: center; line-height: 1.35;
+    width: max-content; max-width: calc(100vw - 48px); padding: 10px 18px 10px 14px; border-radius: 20px;
+  }
+  .prompt-text { overflow: visible; }
+  .toast { max-width: calc(100vw - 48px); width: max-content; text-align: center; border-radius: 18px; line-height: 1.35; }
+
+  /* compact toolbar */
+  .tools { gap: 2px; padding: 5px; max-width: calc(100vw - 16px); border-radius: 20px; }
+  .tools button { min-width: 46px; padding: 7px 3px 6px; gap: 4px; font-size: 10px; letter-spacing: 0.02em; border-radius: 14px; }
+  .tools .ic { width: 21px; height: 21px; }
+  .tools-sep { margin: 8px 2px; }
+  /* free-play toolbar has more tools than fit: hint that it scrolls */
+  body:not(.chapter-tools) .tools { -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); scroll-snap-type: x proximity; }
+  body:not(.chapter-tools) .tools button { scroll-snap-align: start; }
+
+  /* sparkler chapter: caption up in the sky, toolbar in the bottom bar,
+     and one action line (prompt or Continue) just above it */
+  body.chapter-tools .caption { top: calc(var(--bar) + 20px); bottom: auto; }
+  body.chapter-tools .caption .body { display: none; }
+  body.chapter-tools .tools { bottom: max(8px, env(safe-area-inset-bottom)); }
+  body.chapter-tools .tools [data-tool='lantern'] { display: none; }
+  body.chapter-tools .prompt { bottom: calc(var(--bar) + 16px); transform: translate(-50%, 0); }
+  body.chapter-tools .next { left: 50%; right: auto; bottom: calc(var(--bar) + 16px); transform: translateX(-50%); }
+  body.chapter-tools:has(.next.on) .prompt { opacity: 0; transition: none; }
 }
